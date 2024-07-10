@@ -6,13 +6,13 @@ The gateway translates MQTT commands into ESP-NOW packets for direct, local comm
 
 ## Features
 
-*   **MQTT Control:** Send commands to your WLED devices using simple JSON payloads over MQTT.
-*   **Wi-Fi Channel Selection:** Optionally target specific Wi-Fi channels or broadcast commands to all WLED devices in range.
+*   **MQTT Control:** Send commands to your WLED or any devices using simple JSON payloads over MQTT.
+*   **Wi-Fi Channel Selection:** Optionally target specific Wi-Fi channels or broadcast commands to all devices in range.
 *   **ESP-NOW Communication:**
-    *   Efficiently transmit WLED control commands using ESP-NOW.
-    *   Receive status updates (e.g., online/offline) from WLED devices.
+    *   Efficiently transmit control commands using ESP-NOW.
+    *   Receive status updates (e.g., online/offline) from devices.
 *   **MQTT Status Updates:** Receive periodic updates on the gateway's uptime, MAC address, and Wi-Fi signal strength.
-*   **WiFiManager Configuration:** Easily set up Wi-Fi and MQTT credentials using a captive portal, no code changes required!
+*   **WiFiManager Configuration:** Easily set up Wi-Fi and MQTT credentials using a captive portal
 
 ## Hardware Requirements
 
@@ -41,7 +41,7 @@ The gateway translates MQTT commands into ESP-NOW packets for direct, local comm
 ## Usage
 
 ### MQTT Commands
-For WLED Specific using WizRemote
+For WLED specific using WizRemote
 Publish JSON messages to the topic `espnow/outgoing`:
 ```json
 {"device_platform": "wizremote", "button": <button_code>, "channel": <wifi_channel>}
@@ -75,6 +75,7 @@ Subscribe to `espnow/incoming/<device_MAC>` to receive messages from any ESPNow 
 
 ## Home Assistant Integration (Optional)
 **For WLED**
+
 You can integrate this gateway with Home Assistant by creating MQTT buttons/switches or lights that send the appropriate commands. 
 Configuration.yaml example:
 ```yaml
