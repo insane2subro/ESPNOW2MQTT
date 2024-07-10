@@ -1,8 +1,8 @@
-# ESP32 MQTT to ESP-NOW Gateway for WLED Control and other purposes
+# ESP32 MQTT to ESP-NOW Gateway (WLED is supported by default using WiZRemote Commands)
 
-This project enables seamless control of WLED devices (LED strips, lights, etc.) using MQTT (Message Queuing Telemetry Transport) over your existing Wi-Fi network. 
+I intended to make it work with my WLED, it's open enough for you to pass ESPNOW messages to MQTT and MQTT to ESPNOW hence acting as a gateway. 
+This project enables seamless control of WLED devices (LED strips, lights, etc.) using MQTT over your existing Wi-Fi network. 
 The gateway translates MQTT commands into ESP-NOW packets for direct, local communication with your WLED devices. It also sends status updates from the ESP32 gateway back to your MQTT broker.
-While I intended to make it work with my WLED, it's open enough for you to pass ESPNOW messages to MQTT and MQTT to ESPNOW hence acting as a gateway. 
 
 ## Features
 
@@ -144,8 +144,8 @@ Feel free to contribute by opening issues or submitting pull requests to improve
 This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## TODO
-Add other device platforms
-Use QuickESPNow Library
-Allow easy hooking of other sensors
-Better handle non-json incoming messages
-Auto Discovery for HomeAssistant via MQTT
+- Add other device platforms
+- Use QuickESPNow Library
+- Allow easy hooking of other sensors
+- Better handle non-json incoming messages
+- Auto Discovery for HomeAssistant via MQTT
