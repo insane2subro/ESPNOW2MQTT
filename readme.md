@@ -142,3 +142,10 @@ Feel free to contribute by opening issues or submitting pull requests to improve
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+
+## TODO
+Add other device platforms
+Use QuickESPNow Library
+Allow easy hooking of other sensors
+Better handle non-json incoming messages
+Auto Discovery for HomeAssistant via MQTT
