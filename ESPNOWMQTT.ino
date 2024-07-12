@@ -71,10 +71,8 @@ String determineDevicePlatform(DynamicJsonDocument& doc) {
 // Handle platform-specific messages (WLED and "other" implementation)
 void handlePlatformMessage(const String& platform, DynamicJsonDocument& doc) {
     if (platform == "wled") {
-        // ... (WLED-specific message handling - from original code)
-        int buttonCode = doc["button"];
-        // ... (rest of WLED code) 
-        
+        // Call the WLED-specific handler
+        handleWledMessage(doc); 
     } else if (platform == "other") {
         // Handle arbitrary ESP-NOW messages
         if (!doc.containsKey("command")) {
@@ -85,11 +83,13 @@ void handlePlatformMessage(const String& platform, DynamicJsonDocument& doc) {
         String command = doc["command"].as<String>();
         int channel = doc["channel"];
 
+        // Correct the channel setting logic
         if (channel < 1 || channel > 14) { 
             Serial.println("Invalid channel. Broadcasting on all channels.");
+            // Broadcast on all channels if the channel is invalid
             for (int i = 1; i <= 14; ++i) {
                 WiFi.setChannel(i);
-                delay(10);
+                delay(10); // Short delay before switching channels
                 const uint8_t* commandBytes = reinterpret_cast<const uint8_t*>(command.c_str());
                 esp_now_send(broadcastAddress, commandBytes, command.length());
             }
@@ -105,6 +105,7 @@ void handlePlatformMessage(const String& platform, DynamicJsonDocument& doc) {
         Serial.println("Unsupported platform: " + platform);
     }
 }
+
 
 // ESP-NOW Data Receive Callback
 void onDataRecv(const esp_now_recv_info_t *esp_now_info, const uint8_t *data, int data_len) {

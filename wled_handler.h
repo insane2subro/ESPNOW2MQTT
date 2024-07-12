@@ -2,6 +2,7 @@
 #define WLED_HANDLER_H
 
 #include <Arduino.h>
+#include <ArduinoJson.h>
 
 // WLED Message Structure
 typedef struct {
@@ -17,10 +18,10 @@ typedef struct {
     uint8_t byte13;
 } remote_message_struct;
 
-extern const uint8_t broadcastAddress[]; 
+extern uint32_t sequenceNumber;
+extern const uint8_t broadcastAddress[];  // Declare as extern
 
-// Function prototypes (declarations)
-String getDevicePlatformFromTopic(char* topic);
-void handlePlatformMessage(const String& platform, byte* payload, unsigned int length);
+// Function prototype (declaration)
+void handleWledMessage(DynamicJsonDocument& doc); 
 
 #endif

@@ -1,5 +1,4 @@
 #include "wled_handler.h"
-#include <ArduinoJson.h>
 #include <WiFi.h>
 #include <esp_now.h>
 
@@ -7,26 +6,8 @@
 extern uint32_t sequenceNumber;
 extern const uint8_t broadcastAddress[]; 
 
-// Get platform identifier from MQTT topic (No change)
-String getDevicePlatformFromTopic(char* topic) {
-   return "wled"; // Always return "wled" as the platform
-}
-// Handle platform-specific messages (WLED implementation)
-void handlePlatformMessage(const String& platform, byte* payload, unsigned int length) {
-    if (platform != "wled") {
-        Serial.println("Unsupported platform: " + platform);
-        return;
-    }
-
-    DynamicJsonDocument doc(1024);
-    DeserializationError error = deserializeJson(doc, payload, length);
-
-    if (error) {
-        Serial.print("deserializeJson() failed with code: ");
-        Serial.println(error.c_str());
-        return;
-    }
-   
+// WLED-specific message handler
+void handleWledMessage(DynamicJsonDocument& doc) {
     int buttonCode = doc["button"];
     if (buttonCode == 0) {
         Serial.println("Invalid button code");
@@ -41,29 +22,29 @@ void handlePlatformMessage(const String& platform, byte* payload, unsigned int l
 
     switch (buttonCode) {
         case 1:
-            outgoingMessage.program = 0x91;
+            outgoingMessage.program = 0x91; // Toggle on/off (including nightlight mode)
             outgoingMessage.button = 1;
             break;
         case 2:
-            outgoingMessage.button = 2;
+            outgoingMessage.button = 2; // Brightness up
             break;
         case 16:
-            outgoingMessage.button = 16;
+            outgoingMessage.button = 16; // Mode up
             break;
         case 17:
-            outgoingMessage.button = 17;
+            outgoingMessage.button = 17; // Mode down
             break;
         case 18:
-            outgoingMessage.button = 18;
+            outgoingMessage.button = 18; // Speed up
             break;
         case 19:
-            outgoingMessage.button = 19;
+            outgoingMessage.button = 19; // Speed down
             break;
         case 9:
-            outgoingMessage.button = 9;
+            outgoingMessage.button = 9;  // Color up
             break;
         case 8:
-            outgoingMessage.button = 8;
+            outgoingMessage.button = 8;  // Color down
             break;
         default:
             Serial.println("Unsupported button code for wizremote");
@@ -82,9 +63,9 @@ void handlePlatformMessage(const String& platform, byte* payload, unsigned int l
 
     // Broadcast on all channels
     for (int i = 1; i <= 14; ++i) {
-        WiFi.setChannel(i);  
+        WiFi.setChannel(i);
         delay(10);
-        esp_now_send(broadcastAddress, (uint8_t*)&outgoingMessage, sizeof(outgoingMessage));  
+        esp_now_send(broadcastAddress, (uint8_t*)&outgoingMessage, sizeof(outgoingMessage));
     }
     Serial.println("Broadcast ESP-NOW message on all channels");
     Serial.print("Sending ESP-NOW message with data: ");
