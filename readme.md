@@ -60,6 +60,12 @@ Publish JSON messages to the topic `espnow/outgoing`:
     -   19: Button 4
 -   **`channel`:** (Optional) Wi-Fi channel (1-14) or 0 for broadcast.
 
+### OTHERS
+Send a MQTT message and include whatever you want to broadcast in the "command" key
+```json
+{"command": 2, "channel": 0, "device_platform": "other"}
+```
+
 ### MQTT Status Updates
 
 Subscribe to `espnow/status` to receive:
