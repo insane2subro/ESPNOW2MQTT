@@ -1,8 +1,6 @@
-# ESP32 MQTT to ESP-NOW Gateway (WLED is supported by default using WiZRemote Commands)
+# ESP32 MQTT to ESP-NOW Gateway
 
 I intended to make it work with my WLED but it's open enough for you to pass ESPNOW messages to MQTT and MQTT to ESPNOW hence acting as a gateway. 
-This project enables seamless control of WLED devices (LED strips, lights, etc.) using MQTT over your existing Wi-Fi network. 
-The gateway translates MQTT commands into ESP-NOW packets for direct, local communication with your WLED devices. It also sends status updates from the ESP32 gateway back to your MQTT broker.
 
 ## Features
 
@@ -40,7 +38,10 @@ The gateway translates MQTT commands into ESP-NOW packets for direct, local comm
 
 ## Usage
 
-### MQTT Commands
+## MQTT Commands
+### WLED
+Just send a MQTT Message in this format and you are good to go. 
+{"button": 2, "channel": 0, "device_platform": "wled"}
 For WLED specific using WizRemote
 Publish JSON messages to the topic `espnow/outgoing`:
 ```json
@@ -84,42 +85,42 @@ Configuration.yaml example:
     - name: "WLED ON"
       unique_id: "wled_on_button"
       command_topic: "espnow/outgoing"
-      payload_press: '{"device_platform": "wizremote", "button": 1, "channel": 0}' # Broadcast ON
+      payload_press: '{"device_platform": "wled", "button": 1, "channel": 0}' # Broadcast ON
 
     - name: "WLED OFF"
       unique_id: "wled_off_button"
       command_topic: "espnow/outgoing"
-      payload_press: '{"device_platform": "wizremote", "button": 2, "channel": 0}' # Broadcast OFF
+      payload_press: '{"device_platform": "wled", "button": 2, "channel": 0}' # Broadcast OFF
    
     - name: "WLED 1"
       unique_id: "wled_1_button"
       command_topic: "espnow/outgoing"
-      payload_press: '{"device_platform": "wizremote", "button": 16, "channel": 0}' # Broadcast Nightlight
+      payload_press: '{"device_platform": "wled", "button": 16, "channel": 0}' # Broadcast Nightlight
       
     - name: "WLED 2"
       unique_id: "wled_2_button"
       command_topic: "espnow/outgoing"
-      payload_press: '{"device_platform": "wizremote", "button": 17, "channel": 0}' # Broadcast Nightlight
+      payload_press: '{"device_platform": "wled", "button": 17, "channel": 0}' # Broadcast Nightlight
       
     - name: "WLED 3"
       unique_id: "wled_3_button"
       command_topic: "espnow/outgoing"
-      payload_press: '{"device_platform": "wizremote", "button": 18, "channel": 0}' # Broadcast Nightlight
+      payload_press: '{"device_platform": "wled", "button": 18, "channel": 0}' # Broadcast Nightlight
       
     - name: "WLED 4"
       unique_id: "wled_4_button"
       command_topic: "espnow/outgoing"
-      payload_press: '{"device_platform": "wizremote", "button": 19, "channel": 0}' # Broadcast Nightlight
+      payload_press: '{"device_platform": "wled", "button": 19, "channel": 0}' # Broadcast Nightlight
 
     - name: "WLED Brightness Up"
       unique_id: "wled_brightness_up_button"
       command_topic: "espnow/outgoing"
-      payload_press: '{"device_platform": "wizremote", "button": 9, "channel": 0}' # Broadcast Brightness Up
+      payload_press: '{"device_platform": "wled", "button": 9, "channel": 0}' # Broadcast Brightness Up
 
     - name: "WLED Brightness Down"
       unique_id: "wled_brightness_down_button"
       command_topic: "espnow/outgoing"
-      payload_press: '{"device_platform": "wizremote", "button": 8, "channel": 0}' # Broadcast Brightness Down
+      payload_press: '{"device_platform": "wled", "button": 8, "channel": 0}' # Broadcast Brightness Down
 ```
 
 ## Additional Notes
