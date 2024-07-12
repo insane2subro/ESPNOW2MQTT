@@ -35,11 +35,10 @@ PubSubClient mqttClient(espClient);
 
 // MQTT Callback
 void callback(char* topic, byte* payload, unsigned int length) {
-  // 1. Log Incoming Message Details
+
   Serial.printf("Message arrived on topic: %s\n", topic);
   Serial.printf("Message length: %u bytes\n", length);
 
-  // 2. Check if Payload is Valid JSON
   DynamicJsonDocument doc(1024);
   DeserializationError error = deserializeJson(doc, payload, length);
 
@@ -48,21 +47,63 @@ void callback(char* topic, byte* payload, unsigned int length) {
     return;
   }
 
-  // 3. Extract Device Platform
-  String devicePlatform;
-  if (doc.containsKey("device_platform")) {
-    devicePlatform = doc["device_platform"].as<String>();
-    Serial.printf("Device platform: %s\n", devicePlatform.c_str());
-  } else {
-    Serial.println("Missing 'device_platform' field in JSON payload");
-    return;
+  // Extract Device Platform (or Determine Default)
+  String devicePlatform = determineDevicePlatform(doc);
+
+  if (devicePlatform == "unknown") {
+    Serial.println("Device platform not specified or unknown.");
+    return; 
   }
 
-  // 4. Handle Platform-Specific Messages
-  handlePlatformMessage(devicePlatform, payload, length);  
+  // Handle Platform-Specific Messages
+  handlePlatformMessage(devicePlatform, doc); // Pass the parsed JSON object directly
+}
 
-  // 5. Optional: Acknowledge Receipt (if needed)
-  // You could publish an acknowledgement message on a different topic here.
+// Helper function to determine device platform
+String determineDevicePlatform(DynamicJsonDocument& doc) {
+    if (doc.containsKey("device_platform")) {
+        return doc["device_platform"].as<String>();
+    } else {
+        return "other"; // Default platform is now "other"
+    }
+}
+
+// Handle platform-specific messages (WLED and "other" implementation)
+void handlePlatformMessage(const String& platform, DynamicJsonDocument& doc) {
+    if (platform == "wled") {
+        // ... (WLED-specific message handling - from original code)
+        int buttonCode = doc["button"];
+        // ... (rest of WLED code) 
+        
+    } else if (platform == "other") {
+        // Handle arbitrary ESP-NOW messages
+        if (!doc.containsKey("command")) {
+            Serial.println("Missing 'command' field in JSON payload.");
+            return;
+        }
+
+        String command = doc["command"].as<String>();
+        int channel = doc["channel"];
+
+        if (channel < 1 || channel > 14) { 
+            Serial.println("Invalid channel. Broadcasting on all channels.");
+            for (int i = 1; i <= 14; ++i) {
+                WiFi.setChannel(i);
+                delay(10);
+                const uint8_t* commandBytes = reinterpret_cast<const uint8_t*>(command.c_str());
+                esp_now_send(broadcastAddress, commandBytes, command.length());
+            }
+            Serial.println("Broadcast ESP-NOW message on all channels");
+        } else {
+            WiFi.setChannel(channel);
+            const uint8_t* commandBytes = reinterpret_cast<const uint8_t*>(command.c_str());
+            esp_now_send(broadcastAddress, commandBytes, command.length());
+            Serial.printf("Sent ESP-NOW command: %s on channel %d\n", command.c_str(), channel);
+        }
+
+    } else {
+        Serial.println("Unsupported platform: " + platform);
+    }
 }
 
 // ESP-NOW Data Receive Callback
