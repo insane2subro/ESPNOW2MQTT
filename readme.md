@@ -65,6 +65,14 @@ Send a MQTT message and include whatever you want to broadcast in the "command" 
 ```json
 {"command": 2, "channel": 0, "device_platform": "other"}
 ```
+or send a JSON like:
+```json
+{
+  "command": {"action": "toggle", "device": "light1"},
+  "channel": 6,
+  "device_platform": "other"
+}
+```
 
 ### MQTT Status Updates
 
