@@ -115,10 +115,21 @@ void onDataRecv(const esp_now_recv_info_t *esp_now_info, const uint8_t *data, in
     Serial.print("Incoming ESP-NOW message on topic: ");
     Serial.println(topic);
     
-    // Directly publish the raw data without casting
-    mqttClient.publish(topic.c_str(), data, data_len, false);  // Remove the (const char*) cast
-    
-    Serial.println("Sent message to MQTT");
+    // Attempt to parse JSON
+    DynamicJsonDocument doc(1024);
+    DeserializationError error = deserializeJson(doc, (const char*)data, data_len);
+
+    if (!error) {
+        // If it's valid JSON, publish as a string
+        String jsonString;
+        serializeJson(doc, jsonString);
+        mqttClient.publish(topic.c_str(), jsonString.c_str(), false);
+        Serial.println("Published JSON to MQTT: " + jsonString);
+    } else {
+        // If not valid JSON, publish as raw data
+        mqttClient.publish(topic.c_str(), data, data_len, false);
+        Serial.println("Published raw data to MQTT");
+    }
 }
 
 void sendStatusUpdate() {
