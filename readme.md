@@ -45,7 +45,7 @@ Just send a MQTT Message in this format and you are good to go.
 For WLED specific using WizRemote
 Publish JSON messages to the topic `espnow/outgoing`:
 ```json
-{"device_platform": "wizremote", "button": <button_code>, "channel": <wifi_channel>}
+{"device_platform": "wled", "button": <button_code>, "channel": <wifi_channel>}
 ```
 -   **`device_platform`:** Always "wizremote" for WLED.
 -   **`button`:**  WLED button code (see WLED docs):
