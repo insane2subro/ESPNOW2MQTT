@@ -5,6 +5,7 @@
 
 extern uint32_t sequenceNumber;
 extern const uint8_t broadcastAddress[]; 
+extern void logEspNowResult(esp_err_t result, const String& command, int channel); // Declare the function
 
 // WLED-specific message handler
 void handleWledMessage(DynamicJsonDocument& doc) {
@@ -61,17 +62,28 @@ void handleWledMessage(DynamicJsonDocument& doc) {
     outgoingMessage.byte8 = 0x01;
     outgoingMessage.byte9 = 0x64;
 
-    // Broadcast on all channels
-    for (int i = 1; i <= 14; ++i) {
-        WiFi.setChannel(i);
-        delay(10);
-        esp_now_send(broadcastAddress, (uint8_t*)&outgoingMessage, sizeof(outgoingMessage));
+    int channel = doc["channel"]; // Get the channel from the JSON payload
+
+    // Check if the channel is valid
+    if (channel >= 1 && channel <= 14) {
+        // Send on the specified channel
+        WiFi.setChannel(channel);
+        esp_err_t result = esp_now_send(broadcastAddress, (uint8_t*)&outgoingMessage, sizeof(outgoingMessage));
+        logEspNowResult(result, String(buttonCode), channel);
+    } else {
+        // Broadcast on all channels if the channel is invalid (or 0)
+        esp_err_t result = ESP_OK; // Assume success initially
+        for (int i = 1; i <= 14; ++i) {
+            WiFi.setChannel(i);
+            delay(10);
+            result = esp_now_send(broadcastAddress, (uint8_t*)&outgoingMessage, sizeof(outgoingMessage));
+            if (result != ESP_OK) {
+                break; // Stop if an error occurs on any channel
+            }
+        }
+        // Log the result only once after the loop
+        logEspNowResult(result, String(buttonCode), 0); // 0 indicates broadcast
     }
-    Serial.println("Broadcast ESP-NOW message on all channels");
-    Serial.print("Sending ESP-NOW message with data: ");
-    for (int i = 0; i < sizeof(outgoingMessage); i++) {
-        Serial.print(((uint8_t*)&outgoingMessage)[i], HEX);
-        Serial.print(" ");
-    }
-    Serial.println();
 }
+
+

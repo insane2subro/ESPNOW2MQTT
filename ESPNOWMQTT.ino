@@ -71,8 +71,7 @@ String determineDevicePlatform(DynamicJsonDocument& doc) {
 // Handle platform-specific messages (WLED and "other" implementation)
 void handlePlatformMessage(const String& platform, DynamicJsonDocument& doc) {
     if (platform == "wled") {
-        // Call the WLED-specific handler
-        handleWledMessage(doc); 
+        handleWledMessage(doc); // Call the WLED-specific handler
     } else if (platform == "other") {
         // Handle arbitrary ESP-NOW messages
         if (!doc.containsKey("command")) {
@@ -81,31 +80,77 @@ void handlePlatformMessage(const String& platform, DynamicJsonDocument& doc) {
         }
 
         String command = doc["command"].as<String>();
-        int channel = doc["channel"];
+        int channel = doc["channel"].as<int>();
 
-        // Correct the channel setting logic
-        if (channel < 1 || channel > 14) { 
+        // Validate channel (0 means broadcast on all channels)
+        bool broadcast = (channel < 1 || channel > 14);
+        if (broadcast) {
             Serial.println("Invalid channel. Broadcasting on all channels.");
-            // Broadcast on all channels if the channel is invalid
+            channel = 0; // Set to 0 for status update
+        }
+
+        const uint8_t* commandBytes = reinterpret_cast<const uint8_t*>(command.c_str());
+        esp_err_t result = ESP_OK; // Assume success initially
+
+        if (broadcast) {
+            // Broadcast on all channels
             for (int i = 1; i <= 14; ++i) {
                 WiFi.setChannel(i);
-                delay(10); // Short delay before switching channels
-                const uint8_t* commandBytes = reinterpret_cast<const uint8_t*>(command.c_str());
-                esp_now_send(broadcastAddress, commandBytes, command.length());
+                delay(10);
+
+                // Check result of each send operation
+                result = esp_now_send(broadcastAddress, commandBytes, command.length());
+                if (result != ESP_OK) {
+                    break; // Stop if an error occurs on any channel
+                }
             }
             Serial.println("Broadcast ESP-NOW message on all channels");
         } else {
+            // Send on specific channel
             WiFi.setChannel(channel);
-            const uint8_t* commandBytes = reinterpret_cast<const uint8_t*>(command.c_str());
-            esp_now_send(broadcastAddress, commandBytes, command.length());
-            Serial.printf("Sent ESP-NOW command: %s on channel %d\n", command.c_str(), channel);
+            result = esp_now_send(broadcastAddress, commandBytes, command.length());
         }
 
+        // Log the result only once after the loop
+        logEspNowResult(result, command, channel); 
     } else {
         Serial.println("Unsupported platform: " + platform);
     }
 }
 
+// Helper function to log ESP-NOW send results
+void logEspNowResult(esp_err_t result, const String& command, int channel) {
+    if (result == ESP_OK) {
+        Serial.printf("Sent ESP-NOW command: %s on channel %d\n", command.c_str(), channel);
+
+        // Create status message
+        DynamicJsonDocument statusDoc(256);
+        statusDoc["platform"] = "other";
+        statusDoc["command"] = command;
+        statusDoc["channel"] = channel;
+        statusDoc["status"] = "success";
+
+        // Serialize and publish status message
+        String statusMessage;
+        serializeJson(statusDoc, statusMessage);
+        mqttClient.publish(statusTopic, statusMessage.c_str());
+    } else {
+        Serial.printf("Error sending ESP-NOW command: %s on channel %d (Error code: %d)\n", command.c_str(), channel, result);
+
+        // Create status message
+        DynamicJsonDocument statusDoc(256);
+        statusDoc["platform"] = "other";
+        statusDoc["command"] = command;
+        statusDoc["channel"] = channel;
+        statusDoc["status"] = "failure";
+        statusDoc["error_code"] = result;
+
+        // Serialize and publish status message
+        String statusMessage;
+        serializeJson(statusDoc, statusMessage);
+        mqttClient.publish(statusTopic, statusMessage.c_str());
+    }
+}
 
 // ESP-NOW Data Receive Callback
 void onDataRecv(const esp_now_recv_info_t *esp_now_info, const uint8_t *data, int data_len) {
