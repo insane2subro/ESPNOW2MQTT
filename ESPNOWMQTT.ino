@@ -9,6 +9,7 @@
 #include <WiFiManager.h>
 #include <Preferences.h>
 #include "wled_handler.h" 
+#include "esp_task_wdt.h" // To reset the ESP incase it stops responding
 
 // MQTT Credentials
 char mqttServer[40];
@@ -20,12 +21,15 @@ char mqttPassword[40];
 const char* outgoingTopic = "espnow/outgoing";
 const char* incomingTopicBase = "espnow/incoming";
 const char* statusTopic = "espnow/status";
+// LWT Message
+const char* lwtTopic = "espnow/status"; // Same topic as regular status updates
+const char* lwtMessage = "offline";
 
 // ESP-NOW Configuration
 const uint8_t broadcastAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 esp_now_peer_info_t peerInfo;
 
-// Global Variables
+// Global Variables 
 unsigned long startTime = millis();
 uint32_t sequenceNumber = 0; // For WLED message sequencing
 
@@ -35,7 +39,6 @@ PubSubClient mqttClient(espClient);
 
 // MQTT Callback
 void callback(char* topic, byte* payload, unsigned int length) {
-
   Serial.printf("Message arrived on topic: %s\n", topic);
   Serial.printf("Message length: %u bytes\n", length);
 
@@ -217,6 +220,7 @@ void setup() {
     preferences.getString("mqttServer", mqttServer, sizeof(mqttServer));
     preferences.getString("mqttUser", mqttUser, sizeof(mqttUser));
     preferences.getString("mqttPassword", mqttPassword, sizeof(mqttPassword));
+    
     // WiFiManager Setup
     WiFiManager wm;
 
@@ -298,7 +302,7 @@ void setup() {
         Serial.print("MQTT Port: "); Serial.println(custom_mqtt_port.getValue());
         Serial.print("MQTT User: "); Serial.println(custom_mqtt_user.getValue());
 
-        if (mqttClient.connect("ESP32Client", custom_mqtt_user.getValue(), custom_mqtt_password.getValue())) {
+        if (mqttClient.connect("ESP32Client", custom_mqtt_user.getValue(), custom_mqtt_password.getValue(), lwtTopic, 0, true, lwtMessage)) {
             Serial.println("Connected to MQTT");
             Serial.print("Subscribed to MQTT Topic: ");
             Serial.println(outgoingTopic);
@@ -310,13 +314,64 @@ void setup() {
             delay(5000);
         }
     }
+    // Watchdog Timer Configuration
+    const int WDT_TIMEOUT = 30000; // Timeout in milliseconds (30 seconds)
+    esp_task_wdt_config_t wdt_config = {
+        .timeout_ms = WDT_TIMEOUT,
+        .idle_core_mask = 0,
+        .trigger_panic = true,  
+    };
 
+    // Deinitialize if the watchdog timer is already running
+    esp_task_wdt_deinit(); 
+
+    // Enable and configure the watchdog timer
+    esp_err_t err = esp_task_wdt_init(&wdt_config);
+
+    // Add the current task (loop) to be monitored
+    if (err == ESP_OK) {
+        esp_task_wdt_add(NULL); 
+    }
     // Send Initial Status Update
     sendStatusUpdate();
 }
 
+// Function to reconnect to MQTT broker
+void reconnect() {
+  // Loop until we're reconnected
+  while (!mqttClient.connected()) {
+    Serial.print("Attempting MQTT connection...");
+
+    // Load MQTT Credentials from Preferences (inside the loop)
+    Preferences preferences;
+    preferences.begin("mqtt_settings", false);
+    int mqttPort = preferences.getInt("mqttPort", 1883);
+    char mqttServer[40];
+    char mqttUser[40];
+    char mqttPassword[40];
+    preferences.getString("mqttServer", mqttServer, sizeof(mqttServer));
+    preferences.getString("mqttUser", mqttUser, sizeof(mqttUser));
+    preferences.getString("mqttPassword", mqttPassword, sizeof(mqttPassword));
+    preferences.end();
+
+    // Attempt to connect with the loaded credentials and unique client ID
+    if (mqttClient.connect("ESP32Client", mqttUser, mqttPassword, lwtTopic, 0, true, lwtMessage)) {
+      Serial.println("connected");
+      mqttClient.subscribe(outgoingTopic);
+    } else {
+      Serial.print("failed, rc=");
+      Serial.print(mqttClient.state());
+      Serial.println(" try again in 5 seconds");
+      delay(5000);
+    }
+  }
+}
+
 // Loop Function
 void loop() {
+    if (!mqttClient.connected()) {
+        reconnect(); // Attempt to reconnect
+    }
     mqttClient.loop();
 
     // Send Status Updates Periodically
@@ -325,4 +380,11 @@ void loop() {
         sendStatusUpdate();
         lastStatusTime = millis();
     }
+
+    if (ESP.getFreeHeap() < 10000) { // Example threshold: 10 KB
+        Serial.println("WARNING: Low memory!");
+        mqttClient.publish("espnow/status", "memory low");
+    }
+    // Feed the Watchdog Timer
+    esp_task_wdt_reset(); 
 }
