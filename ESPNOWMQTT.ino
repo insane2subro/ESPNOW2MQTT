@@ -33,12 +33,16 @@ esp_now_peer_info_t peerInfo;
 unsigned long startTime = millis();
 uint32_t sequenceNumber = 0; // For WLED message sequencing
 
+const unsigned long MAX_UNRESPONSIVE_TIME = 300000; // 5 minutes (adjust as needed)
+unsigned long lastReceivedMessageTime = millis(); // Track last message time
+
 // WiFi and MQTT Client
 WiFiClient espClient;
 PubSubClient mqttClient(espClient);
 
 // MQTT Callback
 void callback(char* topic, byte* payload, unsigned int length) {
+  lastReceivedMessageTime = millis(); // Update message time on each incoming MQTT message
   Serial.printf("Message arrived on topic: %s\n", topic);
   Serial.printf("Message length: %u bytes\n", length);
 
@@ -157,6 +161,7 @@ void logEspNowResult(esp_err_t result, const String& command, int channel) {
 
 // ESP-NOW Data Receive Callback
 void onDataRecv(const esp_now_recv_info_t *esp_now_info, const uint8_t *data, int data_len) {
+    lastReceivedMessageTime = millis(); // Update message time on each incoming ESP-NOW message
     char macStr[18]; // Mac Address of the ESP which sent the message
     snprintf(macStr, sizeof(macStr), "%02x:%02x:%02x:%02x:%02x:%02x", esp_now_info->src_addr[0], esp_now_info->src_addr[1], esp_now_info->src_addr[2], esp_now_info->src_addr[3], esp_now_info->src_addr[4], esp_now_info->src_addr[5]);
 
@@ -220,7 +225,6 @@ void setup() {
     preferences.getString("mqttServer", mqttServer, sizeof(mqttServer));
     preferences.getString("mqttUser", mqttUser, sizeof(mqttUser));
     preferences.getString("mqttPassword", mqttPassword, sizeof(mqttPassword));
-    
     // WiFiManager Setup
     WiFiManager wm;
 
@@ -262,11 +266,16 @@ void setup() {
     Serial.print("User: "); Serial.println(mqttUser);
     Serial.println("Password: <hidden>");
 
+    // Attempt to connect to a saved network. If it fails, start the config portal
     if (!wm.autoConnect("ESPNowGateway")) {
-        Serial.println("Failed to connect and hit timeout");
-        ESP.restart();
-        delay(1000);
+        Serial.println("Failed to connect, starting config portal...");
+        wm.startConfigPortal("ESPNowGateway"); // Explicitly start the portal
+        while(true) {
+          wm.process(); // keep the portal running until the user has saved credentials
+        }
     }
+
+    //Close preferences
     preferences.end();
 
     Serial.println("Connected to WiFi");
@@ -295,6 +304,12 @@ void setup() {
     mqttClient.setServer(custom_mqtt_server.getValue(), atoi(custom_mqtt_port.getValue()));
     mqttClient.setCallback(callback);
 
+    // Get MAC address
+    uint8_t mac[6];
+    WiFi.macAddress(mac);
+    char uniqueClientId[20]; // Make it large enough to hold the MAC address
+    snprintf(uniqueClientId, sizeof(uniqueClientId), "ESP32Client-%02x%02x%02x%02x%02x%02x", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+
     // Connect to MQTT Broker
     while (!mqttClient.connected()) {
         Serial.println("Connecting to MQTT...");
@@ -302,7 +317,7 @@ void setup() {
         Serial.print("MQTT Port: "); Serial.println(custom_mqtt_port.getValue());
         Serial.print("MQTT User: "); Serial.println(custom_mqtt_user.getValue());
 
-        if (mqttClient.connect("ESP32Client", custom_mqtt_user.getValue(), custom_mqtt_password.getValue(), lwtTopic, 0, true, lwtMessage)) {
+        if (mqttClient.connect(uniqueClientId, custom_mqtt_user.getValue(), custom_mqtt_password.getValue(), lwtTopic, 0, true, lwtMessage)) {
             Serial.println("Connected to MQTT");
             Serial.print("Subscribed to MQTT Topic: ");
             Serial.println(outgoingTopic);
@@ -338,33 +353,35 @@ void setup() {
 
 // Function to reconnect to MQTT broker
 void reconnect() {
-  // Loop until we're reconnected
-  while (!mqttClient.connected()) {
-    Serial.print("Attempting MQTT connection...");
-
-    // Load MQTT Credentials from Preferences (inside the loop)
+    // Load MQTT Credentials from Preferences (once, before the loop)
     Preferences preferences;
     preferences.begin("mqtt_settings", false);
-    int mqttPort = preferences.getInt("mqttPort", 1883);
-    char mqttServer[40];
-    char mqttUser[40];
-    char mqttPassword[40];
+    mqttPort = preferences.getInt("mqttPort", 1883);
     preferences.getString("mqttServer", mqttServer, sizeof(mqttServer));
     preferences.getString("mqttUser", mqttUser, sizeof(mqttUser));
     preferences.getString("mqttPassword", mqttPassword, sizeof(mqttPassword));
-    preferences.end();
+    preferences.end(); // Close preferences after loading
 
-    // Attempt to connect with the loaded credentials and unique client ID
-    if (mqttClient.connect("ESP32Client", mqttUser, mqttPassword, lwtTopic, 0, true, lwtMessage)) {
-      Serial.println("connected");
-      mqttClient.subscribe(outgoingTopic);
-    } else {
-      Serial.print("failed, rc=");
-      Serial.print(mqttClient.state());
-      Serial.println(" try again in 5 seconds");
-      delay(5000);
+    // Get MAC address
+    uint8_t mac[6];
+    WiFi.macAddress(mac);
+    char uniqueClientId[20]; // Make it large enough to hold the MAC address
+    snprintf(uniqueClientId, sizeof(uniqueClientId), "ESP32Client-%02x%02x%02x%02x%02x%02x", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+
+    while (!mqttClient.connected()) {
+        Serial.print("Attempting MQTT connection...");
+
+        // Attempt to connect with the loaded credentials and unique client ID
+        if (mqttClient.connect(uniqueClientId, mqttUser, mqttPassword, lwtTopic, 0, true, lwtMessage)) {
+            Serial.println("connected");
+            mqttClient.subscribe(outgoingTopic);
+        } else {
+            Serial.print("failed, rc=");
+            Serial.print(mqttClient.state());
+            Serial.println(" try again in 5 seconds");
+            delay(5000);
+        }
     }
-  }
 }
 
 // Loop Function
