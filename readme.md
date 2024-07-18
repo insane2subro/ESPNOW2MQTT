@@ -4,7 +4,7 @@ I intended to make it work with my WLED but it's open enough for you to pass ESP
 
 ## Features
 
-*   **MQTT Control:** Send commands to your WLED or any devices using simple JSON payloads over MQTT.
+*   **MQTT Control:** Send commands to any device using simple JSON payloads over MQTT.
 *   **Wi-Fi Channel Selection:** Optionally target specific Wi-Fi channels or broadcast commands to all devices in range.
 *   **ESP-NOW Communication:**
     *   Efficiently transmit control commands using ESP-NOW.
@@ -43,7 +43,7 @@ I intended to make it work with my WLED but it's open enough for you to pass ESP
 Just send a MQTT Message in this format and you are good to go. 
 {"button": 2, "channel": 0, "device_platform": "wled"}
 For WLED specific using WizRemote
-Publish JSON messages to the topic `espnow/outgoing`:
+Publish JSON messages to the topic `**espnow/outgoing**`:
 ```json
 {"device_platform": "wled", "button": <button_code>, "channel": <wifi_channel>}
 ```
@@ -61,7 +61,8 @@ Publish JSON messages to the topic `espnow/outgoing`:
 -   **`channel`:** (Optional) Wi-Fi channel (1-14) or 0 for broadcast.
 
 ### OTHERS
-Send a MQTT message and include whatever you want to broadcast in the "command" key
+Publish JSON messages to the topic `**espnow/outgoing**`:
+Send a MQTT message and include whatever you want to broadcast in the "command" key. Set Wifi channel on the channel key or keep it 0 for all channels. device_pltform has to be others for now as I work to integrate other devices natively.
 ```json
 {"command": 2, "channel": 0, "device_platform": "other"}
 ```
@@ -76,7 +77,8 @@ or send a JSON like:
 
 ### MQTT Status Updates
 
-Subscribe to `espnow/status` to receive:
+Subscribe to `**espnow/status**` to receive the status of the Device, Last Messages Sent(Success/Failure) and LWT:
+Status:
 ```json
 {
 "uptime": <seconds>,
@@ -84,9 +86,19 @@ Subscribe to `espnow/status` to receive:
 "rssi": <wifi_signal_strength>
 }
 ```
-## MQTT Incoming Messages
+Confirmations:
+```json
+{
+"platform":"other",
+"command":"2",
+"channel":0,
+"status":"success"
+}
+```
 
-Subscribe to `espnow/incoming/` to receive messages from any ESPNow devices broadcasting messages.
+## MQTT Incoming Messages (from ESPNow)
+
+Subscribe to `**espnow/incoming/**` to receive messages from any ESPNow devices broadcasting messages.
 The ESPNOW messages are formatted in JSON:
 ```json
 {"encoding":<encoding>, "data":<MESSAGE>, "device_mac":<mac of the broadcasting device>, protocol":"ESPNOW"}
