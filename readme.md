@@ -74,6 +74,7 @@ or send a JSON like:
   "device_platform": "other"
 }
 ```
+Here the whole JSON in the command key is sent as is.
 
 ### MQTT Status Updates
 
