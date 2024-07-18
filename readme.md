@@ -86,7 +86,16 @@ Subscribe to `espnow/status` to receive:
 ```
 ## MQTT Incoming Messages
 
-Subscribe to `espnow/incoming/<device_MAC>` to receive messages from any ESPNow devices broadcasting messages.
+Subscribe to `espnow/incoming/` to receive messages from any ESPNow devices broadcasting messages.
+The ESPNOW messages are formatted in JSON:
+```json
+{"encoding":<encoding>, "data":<MESSAGE>, "device_mac":<mac of the broadcasting device>, protocol":"ESPNOW"}
+```
+**Example:**
+```json
+{"encoding":"binary","data":"gREAAAAgAgFkIPs/XA==","device_mac":"b4:e6:2d:97:f6:51","protocol":"ESPNOW"}
+```
+ 
 
 ## Home Assistant Integration (Optional)
 **For WLED**
