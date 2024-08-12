@@ -39,15 +39,17 @@ I intended to make it work with my WLED but it's open enough for you to pass ESP
 ## Usage
 
 ## MQTT Commands
-### WLED
-Just send a MQTT Message in this format and you are good to go. 
-{"button": 2, "channel": 0, "device_platform": "wled"}
-For WLED specific using WizRemote
+### WLED via WiZ Remote Protocol
 Publish JSON messages to the topic `**espnow/outgoing**`:
 ```json
-{"device_platform": "wled", "button": <button_code>, "channel": <wifi_channel>}
+{"device_platform": "wiz_remote", "button": <button_code>, "channel": <wifi_channel>}
 ```
--   **`device_platform`:** Always "wizremote" for WLED.
+For WLED specifically using WizRemote protocol, where the 'button' is the button code, the 'channel' is the wifi channel (channel 0 for all wifi channels).
+Example
+```json
+{"button": 2, "channel": 0, "device_platform": "wiz_remote"}
+```
+-   **`device_platform`:** Always "wiz_remote" for WLED control via Wiz Remote Commands.
 -   **`button`:**  WLED button code (see WLED docs):
     -   1: ON
     -   2: OFF
@@ -59,6 +61,24 @@ Publish JSON messages to the topic `**espnow/outgoing**`:
     -   18: Button 3
     -   19: Button 4
 -   **`channel`:** (Optional) Wi-Fi channel (1-14) or 0 for broadcast.
+
+### WLED via JSON Remote
+In the latest 0.15 version of WLED the JSON Remote was introduced. All you need to do is edit one of the ir.json files from WLED (or create your own). Add a corresponding button number to the function you want. 
+For example:
+```json
+"2": {
+    "label": "On",
+    "pos": "1x4",
+    "cmd": "T=1"
+}
+```
+Rename the file 'remote.json' and upload it to your WLED instance <ipaddresss>/edit. Reboot your WLED and you are good to go.
+
+Publish JSON messages to the topic `**espnow/outgoing**`:
+```json
+{"device_platform": "json_remote", "button": <button_code>, "channel": <wifi_channel>}
+```
+WLED will match the button number with the remote.json file and do the corresponding action.
 
 ### OTHERS
 Publish JSON messages to the topic `**espnow/outgoing**`:
