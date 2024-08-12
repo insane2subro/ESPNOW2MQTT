@@ -76,7 +76,7 @@ Rename the file 'remote.json' and upload it to your WLED instance 'ipaddresss/ed
 
 Publish JSON messages to the topic `**espnow/outgoing**`:
 ```json
-{"device_platform": "json_remote", "button": button_code, "channel": wifi_channel}
+{"device_platform": "json_remote", "button": "button_code", "channel": "wifi_channel"}
 ```
 WLED will match the button number with the remote.json file and do the corresponding action.
 
