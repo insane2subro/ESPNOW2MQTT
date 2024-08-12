@@ -42,7 +42,7 @@ I intended to make it work with my WLED but it's open enough for you to pass ESP
 ### WLED via WiZ Remote Protocol
 Publish JSON messages to the topic `**espnow/outgoing**`:
 ```json
-{"device_platform": "wiz_remote", "button": button_code, "channel": wifi_channel}
+{"device_platform": "wiz_remote", "button": "button_code", "channel": "wifi_channel"}
 ```
 For WLED specifically using WizRemote protocol, where the 'button' is the button code, the 'channel' is the wifi channel (channel 0 for all wifi channels).
 Example
