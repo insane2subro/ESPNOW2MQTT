@@ -102,9 +102,9 @@ Subscribe to `**espnow/status**` to receive the status of the Device, Last Messa
 Status:
 ```json
 {
-"uptime": seconds,
-"mac": gateway_mac_address,
-"rssi": wifi_signal_strength
+"uptime": "seconds",
+"mac": "gateway_mac_address",
+"rssi": "wifi_signal_strength"
 }
 ```
 Confirmations:
