@@ -72,7 +72,7 @@ For example:
     "cmd": "T=1"
 }
 ```
-Rename the file 'remote.json' and upload it to your WLED instance 'ipaddresss/edit'. Reboot your WLED and you are good to go.
+Rename the file 'remote.json' and upload it to your WLED instance 'ipaddresss/edit'. **You can use the remote.json file in this repo as a starting point.**
 
 Publish JSON messages to the topic `**espnow/outgoing**`:
 ```json
