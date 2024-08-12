@@ -42,7 +42,7 @@ I intended to make it work with my WLED but it's open enough for you to pass ESP
 ### WLED via WiZ Remote Protocol
 Publish JSON messages to the topic `**espnow/outgoing**`:
 ```json
-{"device_platform": "wiz_remote", "button": <button_code>, "channel": <wifi_channel>}
+{"device_platform": "wiz_remote", "button": button_code, "channel": wifi_channel}
 ```
 For WLED specifically using WizRemote protocol, where the 'button' is the button code, the 'channel' is the wifi channel (channel 0 for all wifi channels).
 Example
@@ -72,11 +72,11 @@ For example:
     "cmd": "T=1"
 }
 ```
-Rename the file 'remote.json' and upload it to your WLED instance <ipaddresss>/edit. Reboot your WLED and you are good to go.
+Rename the file 'remote.json' and upload it to your WLED instance 'ipaddresss/edit'. Reboot your WLED and you are good to go.
 
 Publish JSON messages to the topic `**espnow/outgoing**`:
 ```json
-{"device_platform": "json_remote", "button": <button_code>, "channel": <wifi_channel>}
+{"device_platform": "json_remote", "button": button_code, "channel": wifi_channel}
 ```
 WLED will match the button number with the remote.json file and do the corresponding action.
 
@@ -102,9 +102,9 @@ Subscribe to `**espnow/status**` to receive the status of the Device, Last Messa
 Status:
 ```json
 {
-"uptime": <seconds>,
-"mac": "<gateway_mac_address>",
-"rssi": <wifi_signal_strength>
+"uptime": seconds,
+"mac": gateway_mac_address,
+"rssi": wifi_signal_strength
 }
 ```
 Confirmations:
