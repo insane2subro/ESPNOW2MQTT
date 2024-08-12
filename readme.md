@@ -134,49 +134,49 @@ The ESPNOW messages are formatted in JSON:
 **For WLED**
 
 You can integrate this gateway with Home Assistant by creating MQTT buttons/switches or lights that send the appropriate commands. 
-Configuration.yaml example:
+Configuration.yaml example for Wiz Remote:
 ```yaml
   button:
     # WLED Buttons
     - name: "WLED ON"
       unique_id: "wled_on_button"
       command_topic: "espnow/outgoing"
-      payload_press: '{"device_platform": "wled", "button": 1, "channel": 0}' # Broadcast ON
+      payload_press: '{"device_platform": "wiz_remote", "button": 1, "channel": 0}' # Broadcast ON
 
     - name: "WLED OFF"
       unique_id: "wled_off_button"
       command_topic: "espnow/outgoing"
-      payload_press: '{"device_platform": "wled", "button": 2, "channel": 0}' # Broadcast OFF
+      payload_press: '{"device_platform": "wiz_remote", "button": 2, "channel": 0}' # Broadcast OFF
    
     - name: "WLED 1"
       unique_id: "wled_1_button"
       command_topic: "espnow/outgoing"
-      payload_press: '{"device_platform": "wled", "button": 16, "channel": 0}' # Broadcast Nightlight
+      payload_press: '{"device_platform": "wiz_remote", "button": 16, "channel": 0}' # Broadcast Nightlight
       
     - name: "WLED 2"
       unique_id: "wled_2_button"
       command_topic: "espnow/outgoing"
-      payload_press: '{"device_platform": "wled", "button": 17, "channel": 0}' # Broadcast Nightlight
+      payload_press: '{"device_platform": "wiz_remote", "button": 17, "channel": 0}' # Broadcast Nightlight
       
     - name: "WLED 3"
       unique_id: "wled_3_button"
       command_topic: "espnow/outgoing"
-      payload_press: '{"device_platform": "wled", "button": 18, "channel": 0}' # Broadcast Nightlight
+      payload_press: '{"device_platform": "wiz_remote", "button": 18, "channel": 0}' # Broadcast Nightlight
       
     - name: "WLED 4"
       unique_id: "wled_4_button"
       command_topic: "espnow/outgoing"
-      payload_press: '{"device_platform": "wled", "button": 19, "channel": 0}' # Broadcast Nightlight
+      payload_press: '{"device_platform": "wiz_remote", "button": 19, "channel": 0}' # Broadcast Nightlight
 
     - name: "WLED Brightness Up"
       unique_id: "wled_brightness_up_button"
       command_topic: "espnow/outgoing"
-      payload_press: '{"device_platform": "wled", "button": 9, "channel": 0}' # Broadcast Brightness Up
+      payload_press: '{"device_platform": "wiz_remote", "button": 9, "channel": 0}' # Broadcast Brightness Up
 
     - name: "WLED Brightness Down"
       unique_id: "wled_brightness_down_button"
       command_topic: "espnow/outgoing"
-      payload_press: '{"device_platform": "wled", "button": 8, "channel": 0}' # Broadcast Brightness Down
+      payload_press: '{"device_platform": "wiz_remote", "button": 8, "channel": 0}' # Broadcast Brightness Down
 ```
 
 ## Additional Notes
