@@ -8,7 +8,7 @@ extern const uint8_t broadcastAddress[];
 extern void logEspNowResult(esp_err_t result, const String& command, int channel); // Declare the function
 
 // WLED-specific message handler
-void handleWledMessage(DynamicJsonDocument& doc) {
+void handleWizMessage(DynamicJsonDocument& doc) {
     int buttonCode = doc["button"];
     if (buttonCode == 0) {
         Serial.println("Invalid button code");
@@ -29,7 +29,7 @@ void handleWledMessage(DynamicJsonDocument& doc) {
         case 2:
             outgoingMessage.button = 2; // Brightness up
             break;
-        case 16:
+        case 3:
             outgoingMessage.button = 16; // Mode up
             break;
         case 17:
@@ -85,5 +85,55 @@ void handleWledMessage(DynamicJsonDocument& doc) {
         logEspNowResult(result, String(buttonCode), 0); // 0 indicates broadcast
     }
 }
+
+void handleJsonRemoteMessage(DynamicJsonDocument& doc) {
+    int buttonCode = doc["button"];
+
+    if (buttonCode < 1 || buttonCode > 255) {
+        Serial.println("Invalid button code for json_remote (must be between 1 and 255)");
+        return;
+    }
+
+    Serial.print("Button Code (json_remote): ");
+    Serial.println(buttonCode);
+
+    remote_message_struct outgoingMessage;
+    outgoingMessage.program = 0x81;
+    outgoingMessage.button = buttonCode; 
+
+    sequenceNumber++;
+    outgoingMessage.seq[0] = sequenceNumber & 0xFF;
+    outgoingMessage.seq[1] = (sequenceNumber >> 8) & 0xFF;
+    outgoingMessage.seq[2] = (sequenceNumber >> 16) & 0xFF;
+    outgoingMessage.seq[3] = (sequenceNumber >> 24) & 0xFF;
+
+    outgoingMessage.byte5 = 0x20;
+    outgoingMessage.byte8 = 0x01;
+    outgoingMessage.byte9 = 0x64;
+
+    int channel = doc["channel"]; 
+
+    // Check if the channel is valid
+    if (channel >= 1 && channel <= 14) {
+        // Send on the specified channel
+        WiFi.setChannel(channel);
+        esp_err_t result = esp_now_send(broadcastAddress, (uint8_t*)&outgoingMessage, sizeof(outgoingMessage));
+        logEspNowResult(result, String(buttonCode), channel);
+    } else {
+        // Broadcast on all channels if the channel is invalid (or 0)
+        esp_err_t result = ESP_OK; // Assume success initially
+        for (int i = 1; i <= 14; ++i) {
+            WiFi.setChannel(i);
+            delay(10);
+            result = esp_now_send(broadcastAddress, (uint8_t*)&outgoingMessage, sizeof(outgoingMessage));
+            if (result != ESP_OK) {
+                break; // Stop if an error occurs on any channel
+            }
+        }
+        // Log the result only once after the loop
+        logEspNowResult(result, String(buttonCode), 0); // 0 indicates broadcast
+    }
+}
+
 
 

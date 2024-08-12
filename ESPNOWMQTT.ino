@@ -10,6 +10,7 @@
 #include <Preferences.h>
 #include "wled_handler.h" 
 #include "esp_task_wdt.h" // To reset the ESP incase it stops responding
+#include <Base64.h> 
 
 // MQTT Credentials
 char mqttServer[40];
@@ -77,8 +78,39 @@ String determineDevicePlatform(DynamicJsonDocument& doc) {
 
 // Handle platform-specific messages (WLED and "other" implementation)
 void handlePlatformMessage(const String& platform, DynamicJsonDocument& doc) {
-    if (platform == "wled") {
-        handleWledMessage(doc); // Call the WLED-specific handler
+    if (platform == "wiz_remote") {
+        // Check if 'command' field exists (for raw IR code format)
+        if (doc.containsKey("command")) {
+            String irCode = doc["command"].as<String>();
+            int channel = doc["channel"]; 
+
+            // Check if the channel is valid
+            if (channel >= 1 && channel <= 14) {
+                // Send on the specified channel
+                WiFi.setChannel(channel);
+                esp_err_t result = esp_now_send(broadcastAddress, (uint8_t*)irCode.c_str(), irCode.length());
+                logEspNowResult(result, irCode, channel);
+            } else {
+                // Broadcast on all channels if the channel is invalid (or 0)
+                esp_err_t result = ESP_OK; // Assume success initially
+                for (int i = 1; i <= 14; ++i) {
+                    WiFi.setChannel(i);
+                    delay(10);
+                    result = esp_now_send(broadcastAddress, (uint8_t*)irCode.c_str(), irCode.length());
+                    if (result != ESP_OK) {
+                        break; // Stop if an error occurs on any channel
+                    }
+                }
+                // Log the result only once after the loop
+                logEspNowResult(result, irCode, 0); // 0 indicates broadcast
+            }
+        } else {
+            // Existing code for handling button codes if 'command' is not present
+            handleWizMessage(doc); // Call the WLED-specific handler (assuming this function exists in your code)
+        }
+    } else if (platform == "json_remote") {
+        handleJsonRemoteMessage(doc);
+
     } else if (platform == "other") {
         // Handle arbitrary ESP-NOW messages
         if (!doc.containsKey("command")) {
@@ -161,29 +193,46 @@ void logEspNowResult(esp_err_t result, const String& command, int channel) {
 
 // ESP-NOW Data Receive Callback
 void onDataRecv(const esp_now_recv_info_t *esp_now_info, const uint8_t *data, int data_len) {
-    lastReceivedMessageTime = millis(); // Update message time on each incoming ESP-NOW message
+    lastReceivedMessageTime = millis();
+
     char macStr[18]; // Mac Address of the ESP which sent the message
     snprintf(macStr, sizeof(macStr), "%02x:%02x:%02x:%02x:%02x:%02x", esp_now_info->src_addr[0], esp_now_info->src_addr[1], esp_now_info->src_addr[2], esp_now_info->src_addr[3], esp_now_info->src_addr[4], esp_now_info->src_addr[5]);
 
-    String topic = String(incomingTopicBase) + "/" + macStr;
-    Serial.print("Incoming ESP-NOW message on topic: ");
-    Serial.println(topic);
-    
-    // Attempt to parse JSON
+    String topic = String(incomingTopicBase) + "/"; // Base topic for ESP-NOW messages
+
+    // Create JSON object for message
     DynamicJsonDocument doc(1024);
+
+    // Attempt to parse JSON
     DeserializationError error = deserializeJson(doc, (const char*)data, data_len);
 
     if (!error) {
-        // If it's valid JSON, publish as a string
-        String jsonString;
-        serializeJson(doc, jsonString);
-        mqttClient.publish(topic.c_str(), jsonString.c_str(), false);
-        Serial.println("Published JSON to MQTT: " + jsonString);
+        // Valid JSON: Add encoding and preserve existing data
+        doc["encoding"] = "json";
     } else {
-        // If not valid JSON, publish as raw data
-        mqttClient.publish(topic.c_str(), data, data_len, false);
-        Serial.println("Published raw data to MQTT");
+        // Handle non-JSON data
+        bool isBinary = false;
+        for (int i = 0; i < data_len; i++) {
+            if (data[i] < 32 || data[i] > 126) { 
+                isBinary = true;
+                break;
+            }
+        }
+
+        if (isBinary) {
+            doc["encoding"] = "binary";
+            doc["data"] = base64::encode(data, data_len);
+        } else {
+            doc["encoding"] = "raw";
+            doc["data"] = (const char*)data;
+        }
     }
+    doc["device_mac"] = macStr;
+    doc["protocol"] = "ESPNOW";
+    String jsonString;
+    serializeJson(doc, jsonString);
+    mqttClient.publish(topic.c_str(), jsonString.c_str(), false);
+    Serial.println("Published ESP-NOW message to MQTT: " + jsonString);
 }
 
 void sendStatusUpdate() {

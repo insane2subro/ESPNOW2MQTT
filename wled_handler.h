@@ -22,6 +22,6 @@ extern uint32_t sequenceNumber;
 extern const uint8_t broadcastAddress[];  // Declare as extern
 
 // Function prototype (declaration)
-void handleWledMessage(DynamicJsonDocument& doc); 
-
+void handleWizMessage(DynamicJsonDocument& doc); 
+void handleJsonRemoteMessage(DynamicJsonDocument& doc); 
 #endif
