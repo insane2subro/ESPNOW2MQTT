@@ -122,7 +122,7 @@ Confirmations:
 Subscribe to `**espnow/incoming/**` to receive messages from any ESPNow devices broadcasting messages.
 The ESPNOW messages are formatted in JSON:
 ```json
-{"encoding":<encoding>, "data":<MESSAGE>, "device_mac":<mac of the broadcasting device>, protocol":"ESPNOW"}
+{"encoding":"encoding", "data":"MESSAGE", "device_mac":'mac of the broadcasting device", protocol":"ESPNOW"}
 ```
 **Example:**
 ```json
