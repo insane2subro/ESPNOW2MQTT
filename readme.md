@@ -128,7 +128,12 @@ The ESPNOW messages are formatted in JSON:
 ```json
 {"encoding":"binary","data":"gREAAAAgAgFkIPs/XA==","device_mac":"b4:e6:2d:97:f6:51","protocol":"ESPNOW"}
 ```
- 
+
+**NOTE**
+Currently, the gateway will support either Base64 or JSON. Binary data will show up but for example, if you sent "1" as binary it may become "AQ==" during conversion, however, it will be fixed in future updates. JSON will be sent as is in the "data" key for example, if you send a humidity sensor then you will receive something like this in the incoming channel 
+```json
+{"encoding":"JSON","data":"{'humidity':59.26}","device_mac":"b4:e6:2d:97:f6:51","protocol":"ESPNOW"} 
+```
 
 ## Home Assistant Integration (Optional)
 **For WLED**
